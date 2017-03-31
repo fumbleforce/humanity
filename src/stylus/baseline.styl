@@ -1,0 +1,112 @@
+@import "_baseline_vars"
+
+
+*
+  font-family $font-family-default
+  font-size $font-size-default
+  box-sizing: border-box
+  text-rendering: optimizeLegibility
+  -webkit-font-smoothing: antialiased
+  
+html, body
+  height 100%
+  position relative
+
+
+
+
+a
+  color: $color-link
+  text-decoration: none
+  
+  &:hover
+    cursor: pointer
+    color: #fff
+    background-color: $color-link
+    border-radius: 2px
+
+  
+nav
+  width: 100%
+  overflow: hidden
+  border-bottom: $border-default
+  
+  a
+    color: inherit
+    padding: $padding-normal
+    display: inline-block
+      
+    &:hover
+      cursor: pointer
+      color: inherit
+      background-color: $color-hover
+
+  >ul
+    padding: 0
+    margin: 0
+    list-style-type none
+    
+    >li
+      padding: $padding-normal
+      display: inline-block
+      
+      &:hover
+        cursor: pointer
+        background-color: $color-hover
+      
+
+main
+  position: relative
+
+h1
+  text-align: center
+  font-size: $h1-font-size
+
+h2
+  font-size: $h2-font-size
+
+
+
+section
+  width: $width-default
+  margin: 0 auto
+  padding: $padding-normal
+
+table
+  width: 100%
+  margin: $margin-normal 0
+  
+  thead
+    tr
+      th
+        font-weight: bold
+        border-bottom: $border-thick
+        
+  tbody
+    tr
+      
+      &:not(:first-child)
+        border-top: $border-default
+  
+  form
+    display: inline
+
+button,
+.button
+  background-color: #fff
+  color: $color-text
+  border: $border-default
+  padding: $padding-tiny
+  display: inline-block
+  
+  
+form
+  input,
+  textarea
+    border-radius: 2px
+    padding: $padding-tiny
+    border: $border-default
+  
+  label
+    display block
+    margin-top: $margin-normal  
