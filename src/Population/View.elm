@@ -6,36 +6,35 @@ import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onMouseEnter)
 
-import Population.Model exposing (Model)
-import Population.Types exposing (Person, Sex(..))
-import Population.Common exposing (peopleConfig, isChild, isAdult)
-import Population.Msg exposing (Msg(..))
+import Model exposing (Model)
+import Types exposing (..)
+import Population.Common exposing (isChild, isAdult, getAge)
 
 personColor = rgb 0 0 0
 
 
 renderPopulation : Model -> Html Msg
-renderPopulation ({ people, selectedPerson } as model) =
+renderPopulation ({ people, selectedPerson, date } as model) =
   let
     peopleStatistics =
       { numPregnant =
           people
-          |> filter (\p -> p.pregnant)
+          |> filter (\p -> p.pregnantAt /= Nothing)
           |> length
       , numChild =
           people
-          |> filter isChild
+          |> filter (isChild date)
           |> length
       , num =
           people
           |> length
       , numAdults =
           people
-          |> filter isAdult
+          |> filter (isAdult date)
           |> length
       , avgAge =
           people
-          |> List.map (\p -> p.age)
+          |> List.map (\p -> (getAge p date))
           |> sum
           |> \ages -> ages / (toFloat (length people))
       }
@@ -111,11 +110,11 @@ renderPopulation ({ people, selectedPerson } as model) =
                 ]
               , tr []
                 [ td [] [ text "Age" ]
-                , td [] [ text <| toString <| round <| p.age * 100 ]
+                , td [] [ text <| toString <| round <| getAge p date ]
                 ]
               , tr []
                 [ td [] [ text "Preg" ]
-                , td [] [ text <| toString <| p.pregnant ]
+                , td [] [ text <| toString <| p.pregnantAt ]
                 ]
               ]
             ]

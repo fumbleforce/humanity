@@ -1,16 +1,36 @@
-module Main exposing (..)
+port module Main exposing (..)
 
-import Model exposing (init)
+import Html
+import Json.Encode
+
+import Model exposing (init, Model, encodeModel)
+import Types exposing (Msg)
 import View exposing (view)
 import Update exposing (update)
 import Subs exposing (subscriptions)
 
-main : Program Never Model Msg
+main : Program (Maybe Json.Encode.Value) Model Msg
 main =
-  Html.program
+  Html.programWithFlags
     { init = init
     , view = view
-    , update = update
+    , update = updateWithStorage
     , subscriptions = subscriptions
     }
 
+
+port setStorage : Json.Encode.Value -> Cmd msg
+
+
+{-| We want to `setStorage` on every update. This function adds the setStorage
+command for every step of the update function.
+-}
+updateWithStorage : Msg -> Model -> (Model, Cmd Msg)
+updateWithStorage msg model =
+  let
+    (newModel, cmds) =
+      update msg model
+  in
+    ( newModel
+    , Cmd.batch [ setStorage (encodeModel newModel), cmds ]
+    )

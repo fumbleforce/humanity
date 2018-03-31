@@ -7,5 +7,15 @@
   <body>
     <div id="main"></div>
     <script src="/app.js"></script>
+    <script type="text/javascript">
+      var Elm = require("./Main");
+      var storedState = localStorage.getItem("elm-saved-state");
+      var startingState = storedState ? JSON.parse(storedState) : null;
+      var app = Elm.Main.fullscreen(startingState);
+
+      app.ports.setStorage.subscribe(function(state) {
+        localStorage.setItem("elm-saved-state", JSON.stringify(state));
+      });
+    </script>
   </body>
 </html>

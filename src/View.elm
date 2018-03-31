@@ -2,19 +2,15 @@ module View exposing (..)
 
 import Html exposing (Html, Attribute, div, text, input, h3)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onCheck)
-import Text
 
 import Model exposing (Model)
-import Population.View exposing (renderPeople)
+import Types exposing (..)
+import Population.View exposing (renderPopulation)
 
-
-viewConfig =
-  { manualMsg = "SPACE to start"
-  , textHeight = 24
-  , gameWidth = 600
-  , gameHeight = 400
-  }
+--manualMsg = "SPACE to start"
+--textHeight = 24
+--gameWidth = 600
+--gameHeight = 400
 
 
 view : Model -> Html Msg
@@ -22,9 +18,10 @@ view model =
   div []
     [ renderBackground
     , renderState model
-    , renderPeople model
+    , renderPopulation model
     ]
 
+renderBackground : Html Msg
 renderBackground =
   div [ class "background" ] []
 
