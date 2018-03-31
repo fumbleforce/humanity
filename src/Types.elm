@@ -1,6 +1,5 @@
 module Types exposing (..)
 
-
 type alias Positioned entity =
   { entity | x : Float, y : Float }
 

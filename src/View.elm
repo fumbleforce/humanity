@@ -5,9 +5,8 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onCheck)
 import Text
 
-import Game exposing (Model, State(..), Msg)
-import People.PeopleView exposing (renderPeople)
-
+import Model exposing (Model)
+import Population.View exposing (renderPeople)
 
 
 viewConfig =

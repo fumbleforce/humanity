@@ -1,4 +1,4 @@
-module People.Person exposing (..)
+module Population.Types exposing (..)
 
 import Maybe
 

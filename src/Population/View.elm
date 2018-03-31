@@ -1,4 +1,4 @@
-module People.PeopleView exposing (..)
+module Population.View exposing (..)
 
 import List exposing (length, map, filter, sum)
 import Color exposing (Color, rgb)
@@ -6,15 +6,16 @@ import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onMouseEnter)
 
-import Game exposing (Model, Msg(..))
-import People.Person exposing (Person, Sex(..))
-import People.People exposing (peopleConfig, isChild, isAdult)
+import Population.Model exposing (Model)
+import Population.Types exposing (Person, Sex(..))
+import Population.Common exposing (peopleConfig, isChild, isAdult)
+import Population.Msg exposing (Msg(..))
 
 personColor = rgb 0 0 0
 
 
-renderPeople : Model -> Html Msg
-renderPeople ({ people, selectedPerson } as model) =
+renderPopulation : Model -> Html Msg
+renderPopulation ({ people, selectedPerson } as model) =
   let
     peopleStatistics =
       { numPregnant =
@@ -38,8 +39,8 @@ renderPeople ({ people, selectedPerson } as model) =
           |> sum
           |> \ages -> ages / (toFloat (length people))
       }
-    
-    renderPeopleStatistics =
+
+    renderPopulationStatistics =
       table [ class "border" ]
         [ tbody []
           [ tr []
@@ -64,7 +65,7 @@ renderPeople ({ people, selectedPerson } as model) =
             ]
           ]
         ]
-    
+
     renderPerson p =
       let
         color =
@@ -81,7 +82,7 @@ renderPeople ({ people, selectedPerson } as model) =
                 "white bg-yellow"
               else
                 ""
-        
+
         classes =
           "p1 bg-white border inline-block " ++ color
       in
@@ -119,12 +120,12 @@ renderPeople ({ people, selectedPerson } as model) =
               ]
             ]
           ]
-    
-    renderPeopleElements =
+
+    renderPopulationElements =
       people
       |> List.map renderPerson
   in
     div []
-      [ renderPeopleStatistics
-      , div [] renderPeopleElements
+      [ renderPopulationStatistics
+      , div [] renderPopulationElements
       ]
