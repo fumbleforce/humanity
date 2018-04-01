@@ -4,12 +4,13 @@ import List exposing (length, map, filter, sum)
 import Color exposing (Color, rgb)
 import Html exposing (..)
 import Html.Attributes exposing (class)
-import Html.Events exposing (onMouseEnter)
+import Html.Events exposing (onMouseEnter, onMouseUp)
 
 import Model exposing (Model)
 import Types exposing (..)
 import Population.Common exposing (isChild, isAdult, getAge)
 
+personColor : Color
 personColor = rgb 0 0 0
 
 
@@ -83,48 +84,40 @@ renderPopulation ({ people, selectedPerson, date } as model) =
                 ""
 
         classes =
-          "p1 bg-white border inline-block " ++ color
+          "p1 bg-white border " ++ color
       in
-        div [ class classes, onMouseEnter (SelectPerson p.id) ]
-          [ table []
-            [ tbody []
-              [ tr []
-                [ td [] [ text "ID" ]
-                , td [] [ text <| toString <| p.id ]
-                ]
-              , tr []
-                [ td [] [ text "Mother" ]
-                , td [] [ text <| toString <| p.mother ]
-                ]
-              , tr []
-                [ td [] [ text "Father" ]
-                , td [] [ text <| toString <| p.father ]
-                ]
-              , tr []
-                [ td [] [ text "Spouse" ]
-                , td [] [ text <| toString <| p.spouse ]
-                ]
-              , tr []
-                [ td [] [ text "Sex" ]
-                , td [] [ text <| toString <| p.sex ]
-                ]
-              , tr []
-                [ td [] [ text "Age" ]
-                , td [] [ text <| toString <| round <| getAge p date ]
-                ]
-              , tr []
-                [ td [] [ text "Preg" ]
-                , td [] [ text <| toString <| p.pregnantAt ]
-                ]
-              ]
-            ]
+        tr [ class classes, onMouseEnter (SelectPerson p.id) ]
+          [ td [] [ text <| toString <| p.id ]
+          , td [] [ text <| toString <| p.mother ]
+          , td [] [ text <| toString <| p.father ]
+          , td [] [ text <| toString <| p.spouse ]
+          , td [] [ text <| toString <| p.sex ]
+          , td [] [ text <| toString <| round <| getAge p date ]
+          , td [] [ text <| toString <| p.pregnantAt ]
           ]
 
     renderPopulationElements =
-      people
-      |> List.map renderPerson
+      table []
+        [ thead []
+          [ tr []
+            [ td [] [ text "ID" ]
+            , td [] [ text "Mother" ]
+            , td [] [ text "Father" ]
+            , td [] [ text "Spouse" ]
+            , td [] [ text "Sex" ]
+            , td [] [ text "Age" ]
+            , td [] [ text "Preg" ]
+            ]
+          ]
+        , tbody []
+            (List.map renderPerson people)
+        ]
+
+    renderSeedButtons =
+      button [onMouseUp SeedPerson] [ text "Person" ]
   in
     div []
       [ renderPopulationStatistics
-      , div [] renderPopulationElements
+      , renderSeedButtons
+      , renderPopulationElements
       ]

@@ -3,6 +3,7 @@ module Population.Common exposing (..)
 import Random exposing (int, initialSeed, step, minInt, maxInt, Seed)
 import Maybe exposing (..)
 import Dict
+import List.Extra exposing (find)
 import Basics exposing (toFloat)
 
 import Model exposing (Model)
@@ -35,6 +36,14 @@ isAdult date p =
   in
     age >= settings.adultAge
 
+isMale : Person -> Bool
+isMale p =
+  p.sex == Male
+
+isFemale : Person -> Bool
+isFemale p =
+  p.sex == Female
+
 
 stepPerson: Person -> Person
 stepPerson p =
@@ -57,14 +66,46 @@ stepPeople { people, date } =
 createPerson: Id -> Id -> Id -> Sex -> Date -> Person
 createPerson id father mother sex date =
   { id = id
+  , bornAt = date
+  , sex = sex
   , father = father
   , mother = mother
-  , sex = sex
-  , bornAt = date
+  , spouse = Nothing
   , fullness = 100
   , pregnantAt = Nothing
-  , spouse = Nothing
+  , lifeLog = []
   }
+
+randomId: Seed -> (Id, Seed)
+randomId seed =
+  step (int minInt maxInt) seed
+
+
+seedPerson: Seed -> Date -> (Person, Seed)
+seedPerson seed date =
+  let
+    (id, newSeed) = randomId seed
+    mother = 0
+    father = 0
+    sex = determineSex id
+    person = createPerson id father mother sex date
+  in
+    (person, newSeed)
+
+determineSex : Id -> Sex
+determineSex id =
+  let
+    (b, _) = step Random.bool (initialSeed id)
+  in
+    if b then Male else Female
+
+determineId: Id -> Id
+determineId id =
+  let
+    seed = initialSeed id
+    (id_, _) = step (int minInt maxInt) seed
+  in
+    id_
 
 
 eat : Person -> Person
@@ -73,6 +114,11 @@ eat p =
     | fullness  = p.fullness - settings.eatPerDay
   }
 
+makeLifeLog : String -> Date -> LifeLogEntry
+makeLifeLog event date =
+  { event = event
+  , date = date
+  }
 
 killOldPeople: Date -> Person -> Bool
 killOldPeople date p =
@@ -81,21 +127,6 @@ killOldPeople date p =
   in
     age < settings.maxAge
 
-
-randomId: Id -> Id
-randomId id =
-  let
-    seed = initialSeed id
-    (id_, _) = step (int minInt maxInt) seed
-  in
-    id
-
-randomSex : Id -> Sex
-randomSex id =
-  let
-    (b, _) = step Random.bool (initialSeed id)
-  in
-    if b then Male else Female
 
 randomBabyNumber: Id -> Int
 randomBabyNumber id =
@@ -111,43 +142,62 @@ randomGeneticIdent fId mId =
 makeBabies: Date -> List Person -> List Person
 makeBabies date people =
   let
-    peopleById =
-      people
-      |> List.map (\p -> (p.id, p))
-      |> Dict.fromList
-
     setPregnant p =
       { p | pregnantAt = Just date }
 
-    isWife p =
-      p.sex == Female && p.spouse /= Nothing
+    setGaveBirth p =
+      { p | pregnantAt = Nothing
+          , lifeLog =
+            makeLifeLog "birth" date :: p.lifeLog }
 
-    canHaveBaby p =
-      (isAdult date p) && p.pregnantAt == Nothing
+    isWife p =
+      p.sex == Female && p.spouse /= Nothing --Some spouses are nothings, but they can still have babies.
+
+    isPregnant p =
+      p.pregnantAt /= Nothing
+
+    canBeChildBearing p =
+      ((isAdult date p) && (isWife p)) || (isPregnant p)
 
     canNotHaveBaby p =
-      (isChild date p) || p.pregnantAt /= Nothing
+      not (canBeChildBearing p)
 
-    fertileMarriedWomen =
-      people
-      |> List.filter isWife
-      |> List.filter canHaveBaby
+    matchBirth log =
+      log.event === Birth
 
-    pregnantAtWomen =
-      fertileMarriedWomen
-      |> List.map setPregnant
+    wantsChild p =
+      let
+        lastBirthLog = find matchBirth p.log
+        marriageLog = find matchBirth p.log
 
-    otherPeople =
-      people
-      |> List.filter (\p -> not <| List.member p fertileMarriedWomen)
+        enoughTimeSinceLastBirth =
+          case lastBirthLog of
+            log -> (dateToDay log.date) > settings.daysOfCelibacyAfterPregnancy
+            Nothing -> True
+
+        enoughTimeSinceMarriage =
+          case marriageLog of
+            log -> (dateToDay log.date) > settings.daysOfCelibacyAfterMarriage
+            Nothing -> False
+      in
+        enoughTimeSinceMarriage && enoughTimeSinceLastBirth
+
+    isDue p =
+      case p.pregnantAt of
+        Just pregDate ->
+          ((dateToDay date) - (dateToDay pregDate)) > settings.daysOfPregnancy
+        Nothing ->
+          False
+
+    isNotDue p = not <| isDue p
 
     makeBaby fatherId motherId num =
       let
         babyId =
-          randomId <| (randomGeneticIdent fatherId motherId) + num
+          determineId <| (randomGeneticIdent fatherId motherId) + num
 
         baby =
-          createPerson babyId fatherId motherId (randomSex babyId) date
+          createPerson babyId fatherId motherId (determineSex babyId) date
       in
         baby
 
@@ -167,63 +217,75 @@ makeBabies date people =
         List.range 0 numBabies
         |> List.map (makeBaby fatherId motherId)
 
+    (adultMarriedWomen_, otherPeople) =
+      people
+      |> List.partition canBeChildBearing
+
+    (womenPregnant_, womentNotPregnant_) =
+      adultMarriedWomen_
+      |> List.partition isPregnant
+
+    (womenDue_, womenNotDue) =
+      womenPregnant_
+      |> List.partition isDue
+
     babies =
-      pregnantAtWomen
+      womenDue_
       |> List.map makeBabies
       |> List.concat
 
+    (womenReady_, womenNotReady) =
+      womentNotPregnant_
+      |> List.partition wantsChild
+
+    womenNewlyPregnant =
+      womenReady_
+      |> List.map setPregnant
+
+    womenNoLongerPregnant =
+      womenDue_
+      |> List.map setGaveBirth
   in
-    List.concat [otherPeople, pregnantAtWomen, babies]
+    List.concat
+      [ otherPeople
+      , womenNotDue
+      , womenNewlyPregnant
+      , womenNoLongerPregnant
+      , babies
+      ]
 
 
 matchmake: Date -> List Person -> List Person
 matchmake date people =
   let
-    isSingle p = p.spouse == Nothing
+    isSingleAdult p =
+      isAdult date p && p.spouse == Nothing
 
-    singles =
-      List.filter isSingle people
+    singleAdults =
+      List.filter isSingleAdult people
 
-    bachelors =
-      singles
-      |> List.filter (\p -> p.sex == Male)
-      |> List.map (\p -> p.id)
+    (bachelors, bachelorsettes) =
+      List.partition isMale singleAdults
 
-    bachelorsettes =
-      singles
-      |> List.filter (\p -> p.sex == Female)
-      |> List.map (\p -> p.id)
-
-    marry manId womanId = (manId, womanId)
+    marry man woman = (man.id, woman.id)
 
     couples =
       List.map2 marry bachelors bachelorsettes
 
     wifeOf =
-      couples
-      |> Dict.fromList
+      Dict.fromList couples
 
     husbandOf =
       couples
       |> List.map (\(m, w) -> (w, m))
       |> Dict.fromList
 
-    setWife p =
-      if
-        Dict.member p.id wifeOf
-      then
+    setSpouse p =
+      if Dict.member p.id wifeOf then
         { p | spouse = Dict.get p.id wifeOf }
-      else
-        p
-
-    setHusband p =
-      if
-        Dict.member p.id husbandOf
-      then
+      else if Dict.member p.id husbandOf then
         { p | spouse = Dict.get p.id husbandOf }
       else
         p
   in
-    people
-    |> List.map setHusband
-    |> List.map setWife
+    List.map setSpouse people

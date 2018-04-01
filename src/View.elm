@@ -1,6 +1,6 @@
 module View exposing (..)
 
-import Html exposing (Html, Attribute, div, text, input, h3)
+import Html exposing (..)
 import Html.Attributes exposing (..)
 
 import Model exposing (Model)
@@ -27,7 +27,7 @@ renderBackground =
 
 
 renderState : Model -> Html Msg
-renderState ({ state } as model) =
+renderState ({ state, date, seed } as model) =
   let
     stateMsg =
       case state of
@@ -38,5 +38,15 @@ renderState ({ state } as model) =
 
     stateText =
       h3 [] [ text stateMsg ]
+
+    dateText =
+      h4 []
+        [ text " Day "
+        , text <| toString date.day
+        , text " Year "
+        , text <| toString date.year]
   in
-    stateText
+    div []
+      [ stateText
+      , dateText
+      ]

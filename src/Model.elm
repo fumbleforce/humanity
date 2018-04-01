@@ -2,10 +2,12 @@ module Model exposing (..)
 
 import Task
 import Window
+import Random exposing (Seed, initialSeed)
 import Json.Encode.Extra as EncodeExtra
 import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder, andThen)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
+import Time
 
 import Types exposing (..)
 
@@ -14,6 +16,7 @@ type alias Model =
     state : GameState
   , windowDimensions : Window.Size
   , selectedPerson: Maybe Id
+  , seed: Seed
 
     -- Data
   , date: Date
@@ -23,11 +26,15 @@ type alias Model =
 
 init : Maybe Encode.Value -> ( Model, Cmd Msg )
 init savedModel =
+  (decodeSavedModel savedModel, getTimeCommand)
+
+decodeSavedModel : Maybe Encode.Value -> Model
+decodeSavedModel savedModel =
   case savedModel of
     Just value ->
-      Maybe.withDefault initialModel (Decode.decodeValue decodeModel value |> resultToMaybe) ! []
+      Maybe.withDefault initialModel (Decode.decodeValue decodeModel value |> resultToMaybe)
     _ ->
-      initialModel ! []
+      initialModel
 
 resultToMaybe : Result String Model -> Maybe Model
 resultToMaybe result =
@@ -41,9 +48,15 @@ initialModel =
   { state = Stopped
   , windowDimensions = { width = 640, height = 480 }
   , selectedPerson = Nothing
+  , seed = initialSeed 0
   , date = { day = 0, year = 0 }
   , people = []
   }
+
+
+getTimeCommand : Cmd Msg
+getTimeCommand =
+  Task.perform OnTime Time.now
 
 
 getWindowSizeCommand : Cmd Msg
@@ -59,6 +72,7 @@ decodeModel =
   |> hardcoded Stopped
   |> hardcoded { width = 640, height = 480 }
   |> hardcoded Nothing
+  |> hardcoded (initialSeed 1)
   |> required "date" decodeDate
   |> required "people" (Decode.list decodePerson)
 
@@ -73,12 +87,19 @@ decodePerson =
   |> required "spouse" (Decode.nullable Decode.int)
   |> required "fullness" Decode.float
   |> required "pregnantAt" (Decode.nullable decodeDate)
+  |> required "lifeLog" (Decode.list decodeLifeLogEntry)
 
 decodeDate : Decoder Date
 decodeDate =
   decode Date
   |> required "day" Decode.int
   |> required "year" Decode.int
+
+decodeLifeLogEntry : Decoder LifeLogEntry
+decodeLifeLogEntry =
+  decode LifeLogEntry
+  |> required "type" Decode.string
+  |> required "date" decodeDate
 
 decodeSex : Decoder Sex
 decodeSex =

@@ -1,7 +1,7 @@
 module Types exposing (..)
 
 import Time
-
+import Dict exposing (Dict)
 import Window
 import Time
 
@@ -12,6 +12,8 @@ type Msg
   | SpaceDown
   | WindowSize Window.Size
   | SelectPerson Int
+  | SeedPerson
+  | OnTime Time.Time
 
 
 type GameState
@@ -30,6 +32,16 @@ type alias Date =
   , year: Int
   }
 
+type alias LifeLogEntry =
+  { event: String
+  , date: Date
+  }
+
+type LifeLogEvent
+  = Birth
+  | Marriage
+  | Pregnant
+
 type alias Person =
   { id: Id
 
@@ -45,8 +57,8 @@ type alias Person =
   -- State
   , fullness: Float
   , pregnantAt: Maybe Date
+  , lifeLog: List LifeLogEntry
   }
-
 
 
 type alias Positioned entity =
