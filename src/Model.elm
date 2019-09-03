@@ -1,4 +1,4 @@
-module Model exposing (..)
+module Model exposing (Model, init, encodeModel)
 
 import Task
 import Window
@@ -9,18 +9,29 @@ import Json.Decode as Decode exposing (Decoder, andThen)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Time
 
-import Types exposing (..)
+import Types exposing (
+  Msg(..),
+  GameState(..),
+  Date,
+  Individual,
+  Id,
+  Sex(..),
+  LifeLogEntry,
+  UIMainTab(TabPopulation),
+  LifeLogEvent(GaveBirth, Marriage, Pregnant))
 
 type alias Model =
   { --Temporary
     state : GameState
   , windowDimensions : Window.Size
-  , selectedPerson: Maybe Id
+  , selectedIndividual: Maybe Id
+  , selectedTab: UIMainTab
   , seed: Seed
 
     -- Data
   , date: Date
-  , people: List Person
+  , people: List Individual
+  , peopleLastId: Id
   }
 
 
@@ -47,10 +58,12 @@ initialModel : Model
 initialModel =
   { state = Stopped
   , windowDimensions = { width = 640, height = 480 }
-  , selectedPerson = Nothing
+  , selectedIndividual = Nothing
+  , selectedTab = TabPopulation
   , seed = initialSeed 0
   , date = { day = 0, year = 0 }
   , people = []
+  , peopleLastId = 0
   }
 
 
@@ -72,14 +85,17 @@ decodeModel =
   |> hardcoded Stopped
   |> hardcoded { width = 640, height = 480 }
   |> hardcoded Nothing
+  |> hardcoded TabPopulation
   |> hardcoded (initialSeed 1)
   |> required "date" decodeDate
-  |> required "people" (Decode.list decodePerson)
+  |> required "people" (Decode.list decodeIndividual)
+  |> required "peopleLastId" Decode.int
 
-decodePerson : Decoder Person
-decodePerson =
-  decode Person
+decodeIndividual : Decoder Individual
+decodeIndividual =
+  decode Individual
   |> required "id" Decode.int
+  |> required "genome" (Decode.list Decode.int)
   |> required "bornAt" decodeDate
   |> required "sex" decodeSex
   |> required "father" Decode.int
@@ -88,6 +104,7 @@ decodePerson =
   |> required "fullness" Decode.float
   |> required "pregnantAt" (Decode.nullable decodeDate)
   |> required "lifeLog" (Decode.list decodeLifeLogEntry)
+
 
 decodeDate : Decoder Date
 decodeDate =
@@ -98,8 +115,10 @@ decodeDate =
 decodeLifeLogEntry : Decoder LifeLogEntry
 decodeLifeLogEntry =
   decode LifeLogEntry
-  |> required "type" Decode.string
+  |> required "event" decodeLifeLogEvent
   |> required "date" decodeDate
+
+
 
 decodeSex : Decoder Sex
 decodeSex =
@@ -112,28 +131,42 @@ decodeSex =
   in
     andThen innerDecode Decode.string
 
+decodeLifeLogEvent : Decoder LifeLogEvent
+decodeLifeLogEvent =
+  let
+    innerDecode tag =
+      case tag of
+        "GaveBirth" -> Decode.succeed GaveBirth
+        "Marriage" -> Decode.succeed Marriage
+        "Pregnant" -> Decode.succeed Pregnant
+        _ -> Decode.fail (tag ++ " is not a recognized tag for Sex")
+  in
+    andThen innerDecode Decode.string
+
 -- Encoders --
 
 encodeModel : Model -> Encode.Value
 encodeModel model =
   Encode.object
-    [
-      ("date", encodeDate model.date),
-      ("people", Encode.list (List.map encodePerson model.people))
+    [ ("date", encodeDate model.date)
+    , ("people", Encode.list (List.map encodeIndividual model.people))
+    , ("peopleLastId", Encode.int model.peopleLastId)
     ]
 
-encodePerson : Person -> Encode.Value
-encodePerson person =
+encodeIndividual : Individual -> Encode.Value
+encodeIndividual person =
   Encode.object
     [
       ("id", Encode.int person.id),
+      ("genome", Encode.list <| List.map Encode.int person.genome),
       ("bornAt", encodeDate person.bornAt),
       ("sex", encodeSex person.sex),
       ("father", Encode.int person.father),
       ("mother", Encode.int person.mother),
       ("spouse", (EncodeExtra.maybe Encode.int) person.spouse),
       ("fullness", Encode.float person.fullness),
-      ("pregnantAt", (EncodeExtra.maybe encodeDate) person.pregnantAt)
+      ("pregnantAt", (EncodeExtra.maybe encodeDate) person.pregnantAt),
+      ("lifeLog", Encode.list <| List.map encodeLifeLog person.lifeLog)
     ]
 
 encodeDate : Date -> Encode.Value
@@ -144,8 +177,18 @@ encodeDate date =
       ("day", Encode.int date.day)
     ]
 
+encodeLifeLog : LifeLogEntry -> Encode.Value
+encodeLifeLog log =
+  Encode.object
+    [
+      ("event", encodeLifeLogEvent log.event),
+      ("date", encodeDate log.date)
+    ]
+
 encodeSex : Sex -> Encode.Value
 encodeSex sex =
-  case sex of
-    Male -> Encode.string "Male"
-    Female -> Encode.string "Female"
+  Encode.string <| toString sex
+
+encodeLifeLogEvent : LifeLogEvent -> Encode.Value
+encodeLifeLogEvent event =
+  Encode.string <| toString event

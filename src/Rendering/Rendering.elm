@@ -1,4 +1,4 @@
-module Rendering exposing (..)
+module Rendering exposing ()
 
 import Collage
   exposing

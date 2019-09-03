@@ -1,9 +1,9 @@
-module Game.Update exposing (..)
+module Game.Update exposing (update)
 
 import Time
 
 import Settings exposing (settings)
-import Types exposing (..)
+import Types exposing (Msg(SpaceDown, WindowSize, SelectIndividual, Tick), GameState(Stopped, Running))
 import Model exposing (Model)
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -19,8 +19,8 @@ update msg model =
     WindowSize newSize ->
       ({ model | windowDimensions = newSize }, Cmd.none)
 
-    SelectPerson pId ->
-      ({ model | selectedPerson = Just pId }, Cmd.none)
+    SelectIndividual pId ->
+      ({ model | selectedIndividual = Just pId }, Cmd.none)
 
     Tick dt ->
       case model.state of

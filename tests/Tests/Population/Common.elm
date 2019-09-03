@@ -1,10 +1,10 @@
-module Tests.Population.Common exposing (..)
+module Tests.Population.Common exposing ()
 
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
-import Test exposing (..)
+import Test exposing ()
 import Population.Common exposing (makeBabies)
-import Types exposing (..)
+import Types exposing ()
 
 suite : Test
 suite =

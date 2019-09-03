@@ -1,7 +1,21 @@
-module Types exposing (..)
+module Types exposing (
+  Msg(..),
+  GameState(..),
+  Sex(..),
+  Id,
+  Allele,
+  Genome,
+  Gene(..),
+  Date,
+  LifeLogEvent(..),
+  LifeLogEntry,
+  Individual,
+  Positioned,
+  Aged,
+  UIMainTab(..),
+  Welfare)
 
 import Time
-import Dict exposing (Dict)
 import Window
 import Time
 
@@ -11,10 +25,17 @@ type Msg
   | Tick Time.Time
   | SpaceDown
   | WindowSize Window.Size
-  | SelectPerson Int
-  | SeedPerson
+  | SelectIndividual Int
+  | SelectTab UIMainTab
+  | SeedIndividual
   | OnTime Time.Time
 
+
+type UIMainTab
+  = TabPopulation
+  | TabStatistics
+  | TabGenepool
+  | TabSettings
 
 type GameState
   = Stopped
@@ -27,25 +48,35 @@ type Sex
 
 type alias Id = Int
 
+type alias Allele = Int
+type alias Genome = List Allele
+
+type Gene
+  = SexGene
+  | BeautyGene
+  | MutationGene
+  | FertilityGene
+
 type alias Date =
   { day: Int
   , year: Int
   }
 
 type alias LifeLogEntry =
-  { event: String
+  { event: LifeLogEvent
   , date: Date
   }
 
 type LifeLogEvent
-  = Birth
+  = GaveBirth
   | Marriage
   | Pregnant
 
-type alias Person =
+type alias Individual =
   { id: Id
 
-  -- Personalia
+  -- Individualalia
+  , genome: Genome
   , bornAt: Date
   , sex: Sex
 

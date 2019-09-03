@@ -1,11 +1,11 @@
-module Subs exposing (..)
+module Subs exposing (subscriptions)
 
 import Keyboard
 import Window
 import AnimationFrame
 
 import Model exposing (Model)
-import Types exposing (..)
+import Types exposing (Msg(SpaceDown, Tick, NoOp, WindowSize))
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

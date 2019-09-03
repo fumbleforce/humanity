@@ -1,32 +1,66 @@
-module Population.Update exposing (..)
+module Population.Update exposing (update)
 
 import Model exposing (Model)
-import Types exposing (..)
-import Population.Common exposing (..)
+import Types exposing (
+  Msg(SelectIndividual, SeedIndividual, Tick),
+  Individual,
+  Date,
+  Id,
+  GameState(Running, Stopped))
+import Population.Common exposing (matchmake, eat, killOldPeople)
+import Population.Reproduction exposing (controlPregnancy, makeBabies)
+import Population.Genetics exposing (seedIndividual)
 
-handleSeedPerson : Model -> Model
-handleSeedPerson model =
+
+handleSeedIndividual : Model -> Model
+handleSeedIndividual model =
   let
-    (newPerson, newSeed) = seedPerson model.seed model.date
+    ({ seed, date, peopleLastId, people }) = model
+    id = peopleLastId + 1
+    (newIndividual, newSeed) = seedIndividual seed date id
   in
     { model
-      | people = newPerson :: model.people
+      | people = newIndividual :: people
+      , peopleLastId = id
       , seed = newSeed
     }
+
+
+stepIndividual: Date -> Individual -> Individual
+stepIndividual date p =
+  p
+  |> eat
+  |> controlPregnancy date
+
+stepPeople : Model -> (List Individual, Id)
+stepPeople { people, date, peopleLastId } =
+  people
+  |> List.map (stepIndividual date)
+  |> List.filter (killOldPeople date)
+  |> matchmake date
+  |> makeBabies date peopleLastId
+
+
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    SelectPerson pId ->
-      ({ model | selectedPerson = Just pId }, Cmd.none)
+    SelectIndividual pId ->
+      ({ model | selectedIndividual = Just pId }, Cmd.none)
 
-    SeedPerson ->
-      (handleSeedPerson model, Cmd.none)
+    SeedIndividual ->
+      (handleSeedIndividual model, Cmd.none)
 
     Tick dt ->
       case model.state of
         Running ->
-          ({ model | people = stepPeople model }, Cmd.none )
+          let
+            (people, peopleLastId) = stepPeople model
+          in
+            ({ model
+              | people = people
+              , peopleLastId = peopleLastId }
+            , Cmd.none )
         Stopped ->
           (model, Cmd.none)
 
